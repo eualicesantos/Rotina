@@ -1,98 +1,143 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Tarefa from '../../components/Tarefa';
+type TarefaProps = {
+  id: string;
+  nome: string;
+  feita: boolean;
+};
+export default function App() {
+  const [texto, setTexto] = useState<string>('');                 
+  const [tarefas, setTarefas] = useState<TarefaProps[]>([]);     
+  const [editando, setEditando] = useState<string | null>(null); 
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+  function salvarTarefa() {
+    if (texto.trim() === '') return;
 
-export default function HomeScreen() {
+    if (editando) {
+      const novasTarefas = tarefas.map((tarefa) =>
+        tarefa.id === editando ? { ...tarefa, nome: texto } : tarefa
+      );
+      setTarefas(novasTarefas);
+      setEditando(null);
+    } else {
+      const novaTarefa: TarefaProps = {
+        id: Date.now().toString(),
+        nome: texto,
+        feita: false,
+      };
+      setTarefas([...tarefas, novaTarefa]);
+    }
+    setTexto('');
+  }
+
+  function marcarFeita(id: string) {
+    const novas = tarefas.map((tarefa) =>
+      tarefa.id === id ? { ...tarefa, feita: !tarefa.feita } : tarefa
+    );
+    setTarefas(novas);
+  }
+
+  function editarTarefa(id: string, nome: string) {
+    setTexto(nome);
+    setEditando(id);
+  }
+
+  function apagarTarefa(id: string) {
+    const novas = tarefas.filter((tarefa) => tarefa.id !== id);
+    setTarefas(novas);
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <Text style={styles.titulo}>Minha Rotina</Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <View style={styles.areaInput}>
+        <TextInput
+          style={styles.input}
+          placeholder="Digite uma tarefa..."
+          placeholderTextColor="#E6D3F2"
+          value={texto}
+          onChangeText={setTexto}
+        />
+        <TouchableOpacity style={styles.botao} onPress={salvarTarefa}>
+          <Text style={styles.textoBotao}>
+            {editando ? 'Salvar' : 'Adicionar'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {tarefas.length === 0 && (
+        <Text style={styles.mensagemVazia}>
+          Nenhuma tarefa adicionada ainda.
+        </Text>
+      )}
+
+      <FlatList<TarefaProps>
+        data={tarefas}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <Tarefa
+            data={item}
+            onFeita={marcarFeita}
+            onEditar={editarTarefa}
+            onApagar={apagarTarefa}
+          />
+        )}
+        contentContainerStyle={{ paddingBottom: 50 }}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#E6D3F2',
+    paddingHorizontal: 500,
+  },
+  titulo: {
+    fontSize: 28,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#5A0C91', 
+  },
+  areaInput: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginBottom: 15,
+    backgroundColor: '#C084D9',
+    padding: 5,
+    borderRadius: 15,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  input: {
+    flex: 1,
+    backgroundColor: '#D2A7E5',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    color: '#fff',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  botao: {
+    backgroundColor: '#5A0C91',
+    marginLeft: 5,
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  textoBotao: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  mensagemVazia: {
+    textAlign: 'center',
+    color: '#5A0C91',
+    marginTop: 20,
   },
 });
